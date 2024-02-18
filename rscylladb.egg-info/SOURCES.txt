@@ -1,0 +1,9 @@
+README.md
+setup.py
+rscylladb/__init__.py
+rscylladb/cql.py
+rscylladb.egg-info/PKG-INFO
+rscylladb.egg-info/SOURCES.txt
+rscylladb.egg-info/dependency_links.txt
+rscylladb.egg-info/requires.txt
+rscylladb.egg-info/top_level.txt

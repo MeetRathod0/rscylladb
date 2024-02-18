@@ -1,0 +1,7 @@
+twine upload -u __token__ -p pypi-AgEIcHlwaS5vcmcCJGYxOGY3ZjA3LWE0ZGYtNDU4OS1iMzNjLTVhYmU5NzEyYmYzMgACKlszLCI1OTU4ZjM1Yi1hMzFmLTQwZDEtYWVhOC0wNmEzMTlhNWUzMGIiXQAABiC2GwodBUIuQGhdk4IlkSzaFJD8-5nPLMcXN6X32YPyVA dist/*
+
+twine check dist/*
+
+python setup.py sdist bdist_wheel
+
+https://github.com/tandpfun/skill-icons/blob/main/readme.md

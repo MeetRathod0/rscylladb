@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: rscylladb
+Version: 0.0.1
+Summary: Insert records into cassandra db.
+Author: Reeya Patel and Meet Rathod
+Author-email: 
+Description-Content-Type: text/markdown
+
+Insert batch records from .csv in the scylladb/cassandra
