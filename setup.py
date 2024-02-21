@@ -1,15 +1,16 @@
 #!/usr/bin/env python
-from setuptools import setup
 from setuptools import setup, find_packages
 import codecs
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
+    long_description = "\n" + fh.read()
 
-VERSION = '0.0.1'
-DESCRIPTION = 'Insert records into cassandra db.'
-LONG_DESCRIPTION = 'Insert batch records from .csv in the scylladb/cassandra'
+VERSION = '0.0.4'
+DESCRIPTION = 'Bulk records add into Cassandra or ScyllaDB.'
+LONG_DESCRIPTION =long_description
 
 # Setting up
 setup(
@@ -22,9 +23,9 @@ setup(
     long_description=LONG_DESCRIPTION,
     packages=find_packages(),
     install_requires=[
-        "pandas>=2.2.0",
-        "numpy>=1.26.4",
-        "pyarrow>=15.0.0",
-        "cassandra-driver>=3.29.0"
+        "pandas",
+        "numpy",
+        "pyarrow",
+        "cassandra-driver==3.29.0"
     ],
 )

@@ -26,14 +26,18 @@ class ScyllaDB:
         # make lower columns name for cql
         df.columns = map(str.lower,df.columns)
         # handle null for numeric type default 0 add
-        df[df.select_dtypes(include=np.number).columns] = df.select_dtypes(include=np.number).fillna(0) 
+        df[df.select_dtypes(include=np.number).columns] = df.select_dtypes(include=np.number).fillna(0).astype(int) 
+        # fill boolean
+        df[df.select_dtypes(include=bool).columns] = df.select_dtypes(include=bool).fillna(False)
         # handle null for object and string types
         df[df.select_dtypes(exclude=np.number).columns] = df.select_dtypes(exclude=np.number).fillna('') 
+       
         # empty list
         futures = []
         # excute async & store future object
         for row in df.to_dict(orient='records'): # iterate each records
             futures.append(self.session.execute_async(self.insert__statement,row))
+
         # wait for complete async 
         for future in futures:
             future.result() # wait until insert queries
@@ -44,16 +48,16 @@ class ScyllaDB:
         # has cql to python data type
         self.cql_to_python_type = { 
             'NULL': None,
-            'boolean': bool,
-            'float': float,
-            'double': float,
-            'int':int,
-            'smallint':int, 
-            'tinyint':int,
-            'counter':int,
-            'varint':int,
-            'bigint': int,
-            'decimal': float,
+            'boolean': pd.BooleanDtype(),
+            'float': pd.Float64Dtype(),
+            'double': pd.Float64Dtype(),
+            'int': pd.Int64Dtype(),
+            'smallint': pd.Int16Dtype(), 
+            'tinyint': pd.Int64Dtype(),
+            'counter': pd.Int64Dtype(),
+            'varint': pd.Int64Dtype(),
+            'bigint': pd.Int64Dtype(),
+            'decimal': pd.Float64Dtype(),
             'ascii':str,
             'varchar':str,
             'text': str,
@@ -112,4 +116,3 @@ class ScyllaDB:
                 break
         duration_minutes = (time.time() - self.start_time) / 60
         print(f"Completed in : {duration_minutes:.2f} minutes")
-
