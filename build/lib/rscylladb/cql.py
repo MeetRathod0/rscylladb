@@ -1,4 +1,5 @@
 from cassandra.cluster import Cluster
+from cassandra.query import SimpleStatement
 from cassandra.auth import PlainTextAuthProvider
 import pandas as pd
 import numpy as np
@@ -14,37 +15,23 @@ class ScyllaDB:
         self.keyspace_name = table_name.split(".")[0]
         # table nme
         self.table_name = table_name.split(".")[1]
+
+        print("KEYSPACE   >> ",self.keyspace_name)
+        print("TABLE NAME >> ",self.table_name)
         # set authenticator
         auth = PlainTextAuthProvider(username=user,password=password)
         # set cluster
         self.cluster = Cluster(contact_points=hosts,port=port,auth_provider=auth)
         # set keyspace
         self.session = self.cluster.connect(self.keyspace_name)
+        print("Connected to %s keyspace..."%(self.keyspace_name))
+        stmt = SimpleStatement("SELECT column_name,type FROM system_schema.columns WHERE keyspace_name=%(key)s AND table_name=%(tbl)s")
 
-    
-    def execute_insert(self,df:pd.DataFrame)->None:
-        # make lower columns name for cql
-        df.columns = map(str.lower,df.columns)
-        # handle null for numeric type default 0 add
-        df[df.select_dtypes(include=np.number).columns] = df.select_dtypes(include=np.number).fillna(0).astype(int) 
-        # fill boolean
-        df[df.select_dtypes(include=bool).columns] = df.select_dtypes(include=bool).fillna(False)
-        # handle null for object and string types
-        df[df.select_dtypes(exclude=np.number).columns] = df.select_dtypes(exclude=np.number).fillna('') 
-       
-        # empty list
-        futures = []
-        # excute async & store future object
-        for row in df.to_dict(orient='records'): # iterate each records
-            futures.append(self.session.execute_async(self.insert__statement,row))
-
-        # wait for complete async 
-        for future in futures:
-            future.result() # wait until insert queries
-        
-    def insert(self,file_name:str,chuncks=10000,workers=4)->None:
+        print("Fetch schema of table >> %s "%(self.table_name))
         # get table's all columns and data type
-        table_schema = self.session.execute("SELECT column_name,type FROM system_schema.columns WHERE keyspace_name='%s' AND table_name='%s'"%(self.keyspace_name,self.table_name))
+        table_schema = self.session.execute(stmt,{ "key":self.keyspace_name,"tbl":self.table_name})
+        if table_schema==None: raise Exception("Table %s is not existed or Not getting schema..."%(self.table_name))
+        print("%s columns fetched..."%(str(len([ i.column_name for i in table_schema]))))
         # has cql to python data type
         self.cql_to_python_type = { 
             'NULL': None,
@@ -79,12 +66,33 @@ class ScyllaDB:
             self.cql_types[row.column_name] = self.cql_to_python_type[row.type]
             self.cql_columns.append(row.column_name)
 
-        # if table no columns table not exists
-        if len(self.cql_columns)==0: raise Exception("%s table not exists!"%(self.table_name))
         param_keys = ",".join(self.cql_columns) 
         param_values = ",".join([ '%('+k+')s' for k in self.cql_columns])
         self.insert__statement = "INSERT INTO "+self.table_name+" ("+param_keys+") VALUES ("+param_values+")"
 
+
+    def execute_insert(self,df:pd.DataFrame)->None:
+        # make lower columns name for cql
+        df.columns = map(str.lower,df.columns)
+        # handle null for numeric type default 0 add
+        df[df.select_dtypes(include=np.number).columns] = df.select_dtypes(include=np.number).fillna(0).astype(int) 
+        # fill boolean
+        df[df.select_dtypes(include=bool).columns] = df.select_dtypes(include=bool).fillna(False)
+        # handle null for object and string types
+        df[df.select_dtypes(exclude=np.number).columns] = df.select_dtypes(exclude=np.number).fillna('') 
+       
+        # empty list
+        futures = []
+        # excute async & store future object
+        for row in df.to_dict(orient='records'): # iterate each records
+            futures.append(self.session.execute_async(self.insert__statement,row))
+
+        # wait for complete async 
+        for future in futures:
+            future.result() # wait until insert queries
+        
+    def insert(self,file_name:str,chuncks=10000,workers=4)->None:
+        
         # supported files
         file_ext = file_name.split(".")[-1] # get extension
         if file_ext=="csv": # if csv then read csv with chuncks
@@ -116,3 +124,4 @@ class ScyllaDB:
                 break
         duration_minutes = (time.time() - self.start_time) / 60
         print(f"Completed in : {duration_minutes:.2f} minutes")
+    
