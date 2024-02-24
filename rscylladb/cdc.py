@@ -7,17 +7,10 @@ import threading
 import time
 import re
 import logging as lg
+from logger import create_logger
 
 lg.getLogger("cassandra").setLevel('ERROR')
-formatter = lg.Formatter(
-    '%(asctime)s  %(levelname)s  %(message)s')
-console_handler = lg.StreamHandler()
-console_handler.setLevel(lg.DEBUG)
-console_handler.setFormatter(formatter)
-logger = lg.getLogger()
-logger.addHandler(console_handler)
-logger.setLevel(lg.DEBUG)
-logger.propagate = False
+logger = create_logger("cdc_insert")
 
 def insert(hosts:list,port:int,keyspace_name:str,user="cassandra",password="cassandra",file_name="data.csv",workers=4,chuncks=4):
     start_time = time.time()

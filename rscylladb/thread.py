@@ -6,17 +6,11 @@ import pandas as pd
 import numpy as np
 import time
 import logging as lg
+from logger import create_logger
 
 lg.getLogger("cassandra").setLevel('ERROR')
-formatter = lg.Formatter(
-    '%(asctime)s  %(levelname)s  %(message)s')
-console_handler = lg.StreamHandler()
-console_handler.setLevel(lg.DEBUG)
-console_handler.setFormatter(formatter)
-logger = lg.getLogger()
-logger.addHandler(console_handler)
-logger.setLevel(lg.DEBUG)
-logger.propagate = False
+
+logger = create_logger("thread.AscyllaDB")
 
 
 class AScyllaDB(threading.Thread):
