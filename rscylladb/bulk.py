@@ -11,21 +11,20 @@ import logging as lg
 lg.getLogger("cassandra").setLevel('ERROR')
 formatter = lg.Formatter(
     '%(asctime)s  %(levelname)s  %(message)s')
-file_handler = lg.FileHandler("logfile.log")
-file_handler.setLevel(lg.WARN)
-file_handler.setFormatter(formatter)
 console_handler = lg.StreamHandler()
 console_handler.setLevel(lg.DEBUG)
 console_handler.setFormatter(formatter)
 logger = lg.getLogger()
-logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 logger.setLevel(lg.DEBUG)
+logger.propagate = False
 
-def insert(hosts:list,port:int,table_name:str,user="cassandra",password="cassandra",file_name="data.csv",workers=4,chuncks=4):
+def insert(hosts:list,port:int,table_name="",user="cassandra",password="cassandra",file_name="data.csv",workers=4,chuncks=4):
     
-    if len(sys.argv)<=1: raise Exception("Table_name argument is required!")
-    table_name=sys.argv[1] 
+    if len(sys.argv)<=1: 
+        if table_name=="": raise Exception("table_name is required!")
+    else:
+        table_name=sys.argv[1] 
 
     start_time = time.time() 
     # get keyspace & table name
@@ -135,4 +134,3 @@ def insert(hosts:list,port:int,table_name:str,user="cassandra",password="cassand
     duration_minutes = (time.time() - start_time) / 60
     logger.debug(
             f"DONE! {count} Records Transferred In {duration_minutes:.2f} Minutes.")
-

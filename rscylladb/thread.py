@@ -10,16 +10,13 @@ import logging as lg
 lg.getLogger("cassandra").setLevel('ERROR')
 formatter = lg.Formatter(
     '%(asctime)s  %(levelname)s  %(message)s')
-file_handler = lg.FileHandler("logfile.log")
-file_handler.setLevel(lg.WARN)
-file_handler.setFormatter(formatter)
 console_handler = lg.StreamHandler()
 console_handler.setLevel(lg.DEBUG)
 console_handler.setFormatter(formatter)
 logger = lg.getLogger()
-logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 logger.setLevel(lg.DEBUG)
+logger.propagate = False
 
 
 class AScyllaDB(threading.Thread):
