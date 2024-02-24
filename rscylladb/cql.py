@@ -5,6 +5,21 @@ import pandas as pd
 import numpy as np
 import threading
 import time
+import logging as lg
+
+lg.getLogger("cassandra").setLevel('ERROR')
+formatter = lg.Formatter(
+    '%(asctime)s  %(levelname)s  %(message)s')
+file_handler = lg.FileHandler("logfile.log")
+file_handler.setLevel(lg.WARN)
+file_handler.setFormatter(formatter)
+console_handler = lg.StreamHandler()
+console_handler.setLevel(lg.DEBUG)
+console_handler.setFormatter(formatter)
+logger = lg.getLogger()
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+logger.setLevel(lg.DEBUG)
 
 class ScyllaDB:
     def __init__(self,hosts:list,port:int,table_name:str,user:str,password:str) -> None:
@@ -16,22 +31,19 @@ class ScyllaDB:
         # table nme
         self.table_name = table_name.split(".")[1]
 
-        print("KEYSPACE   >> ",self.keyspace_name)
-        print("TABLE NAME >> ",self.table_name)
+        logger.debug(f"keyspace >> {self.keyspace_name}")
+        logger.debug(f"table    >> {self.table_name}") 
         # set authenticator
         auth = PlainTextAuthProvider(username=user,password=password)
         # set cluster
         self.cluster = Cluster(contact_points=hosts,port=port,auth_provider=auth)
         # set keyspace
         self.session = self.cluster.connect(self.keyspace_name)
-        print("Connected to %s keyspace..."%(self.keyspace_name))
+        logger.debug(f"connected to %s keyspace..."%(self.keyspace_name))
         stmt = SimpleStatement("SELECT column_name,type FROM system_schema.columns WHERE keyspace_name=%(key)s AND table_name=%(tbl)s")
-
-        print("Fetch schema of table >> %s "%(self.table_name))
         # get table's all columns and data type
         table_schema = self.session.execute(stmt,{ "key":self.keyspace_name,"tbl":self.table_name})
-        if table_schema==None: raise Exception("Table %s is not existed or Not getting schema..."%(self.table_name))
-        print("%s columns fetched..."%(str(len([ i.column_name for i in table_schema]))))
+        logger.debug("%s columns fetched..."%(str(len([ i.column_name for i in table_schema]))))
         # has cql to python data type
         self.cql_to_python_type = { 
             'NULL': None,
@@ -59,20 +71,22 @@ class ScyllaDB:
             'uuid': None 
         }
         
+        self.cql_columns = []
         self.cql_types = {}
-        self.cql_columns=[]
         # create dictonary for data frame: column_name:python_datatype
         for row in table_schema:
             self.cql_types[row.column_name] = self.cql_to_python_type[row.type]
             self.cql_columns.append(row.column_name)
-
-        param_keys = ",".join(self.cql_columns) 
-        param_values = ",".join([ '%('+k+')s' for k in self.cql_columns])
-        self.insert__statement = "INSERT INTO "+self.table_name+" ("+param_keys+") VALUES ("+param_values+")"
+		
+        if len(self.cql_columns)!=0:
+            param_keys = ",".join(self.cql_columns) 
+            param_values = ",".join([ '%('+k+')s' for k in self.cql_columns])
+            self.insert__statement = "INSERT INTO "+self.table_name+" ("+param_keys+") VALUES ("+param_values+")"
+        else:
+            logger.debug("columns set using file.")
 
     def execute_insert(self,df:pd.DataFrame)->None:
-        # make lower columns name for cql
-        df.columns = map(str.lower,df.columns)
+        
         # handle null for numeric type default 0 add
         df[df.select_dtypes(include=np.number).columns] = df.select_dtypes(include=np.number).fillna(0).astype(int) 
         # fill boolean
@@ -95,11 +109,11 @@ class ScyllaDB:
         # supported files
         file_ext = file_name.split(".")[-1] # get extension
         if file_ext=="csv": # if csv then read csv with chuncks
-            data_frames = pd.read_csv(file_name,chunksize=chuncks,dtype=self.cql_types)
+            data_frames = pd.read_csv(file_name,chunksize=chuncks)
         elif file_ext=="json":
-            data_frames = pd.read_json(file_name,chunksize=chuncks,lines=True,dtype=self.cql_types)
+            data_frames = pd.read_json(file_name,chunksize=chuncks,lines=True)
         elif file_ext in ["xls","xlsx"]:
-            data_frames = pd.read_excel(file_name,chunksize=chuncks,dtype=self.cql_types)
+            data_frames = pd.read_excel(file_name,chunksize=chuncks)
         else:
             raise Exception("%s is not supported!"%(file_name))
 
@@ -111,8 +125,14 @@ class ScyllaDB:
                 for i in range(workers):
                     # fetch next dataframe
                     df = next(data_frames)
+                    df.columns = map(str.lower,df.columns)
+                    if len(self.cql_columns)==0:
+                        self.cql_columns= df.columns.to_list()
+                        param_keys = ",".join(self.cql_columns) 
+                        param_values = ",".join([ '%('+k+')s' for k in self.cql_columns])
+                        self.insert__statement = "INSERT INTO "+self.table_name+" ("+param_keys+") VALUES ("+param_values+")"
                     threads[i] = threading.Thread(target=self.execute_insert,args=(df,))
-                    threads[i].start()
+                    threads[i].start()  
                 
                 # wait until complete task
                 for i in range(workers):
@@ -122,5 +142,4 @@ class ScyllaDB:
                 print(e)
                 break
         duration_minutes = (time.time() - self.start_time) / 60
-        print(f"Completed in : {duration_minutes:.2f} minutes")
-    
+        logger.debug(f"Completed in : {duration_minutes:.2f} minutes")
