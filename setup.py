@@ -8,9 +8,9 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-VERSION = '1.0.4'
+VERSION = '1.0.6'
 DESCRIPTION = 'Bulk records add into Cassandra or ScyllaDB.'
-LONG_DESCRIPTION =long_description
+LONG_DESCRIPTION = long_description
 
 # Setting up
 setup(

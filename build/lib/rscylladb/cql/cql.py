@@ -5,12 +5,10 @@ import pandas as pd
 import numpy as np
 import threading
 import time
-import logging as lg
-from .logger import create_logger
+import os
+from rscylladb.logger import get_logger
+logger = get_logger(os.path.basename(__file__)+"_ScyllaDB")
 
-lg.getLogger("cassandra").setLevel('ERROR')
-
-logger = create_logger("cql.ScyllaDB")
 
 class ScyllaDB:
     def __init__(self,hosts:list,port:int,table_name:str,user:str,password:str) -> None:

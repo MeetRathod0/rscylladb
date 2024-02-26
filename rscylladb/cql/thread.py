@@ -5,12 +5,9 @@ from collections import namedtuple
 import pandas as pd
 import numpy as np
 import time
-import logging as lg
-from .logger import create_logger
-
-lg.getLogger("cassandra").setLevel('ERROR')
-
-logger = create_logger("thread.AscyllaDB")
+import os
+from rscylladb.logger import get_logger
+logger = get_logger(os.path.basename(__file__)+"_AScyllaDB")
 
 
 class AScyllaDB(threading.Thread):
