@@ -8,8 +8,6 @@
 
 Insert over 20Million records within minutes.
 
-**Special thanks 🤝 to @[Reeya Patel](https://github.com/ReeyaPatel06)**
-
 ### Install using
 ```shell
 pip install rscylla
