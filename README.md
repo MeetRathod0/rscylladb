@@ -12,29 +12,20 @@ Insert over 20Million records within minutes.
 ```shell
 pip install rscylla
 ```
-### Usage
-```python
-from rscylla.cql import Cql
-# hostslist = ['127.0.0.1']
-# port = 9042
-# table_name = keyspace.table_name [must required]
-# username = cassandra
-# password  = cassandra
-obj = Cql(hostslist,port,table_name,username,password)
-# default chunks = 10,000
-# default workers = 4
-obj.insert(filename,chuncks,workers) # filename or filepath
+#### Example: 
+``` python
+from rscylladb.bulk import bulk_insert
+bulk_insert(['192.168.10.129'],9042,username='cassandra',password='cassandra',file_name='file.csv') 
 ```
-#### Example:
+
+#### Example: If you use CDC with Kestra
 ```python
-from rscylla.cql import Cql
-obj = Cql(["localhost"],9042,"cassandra","cassandra")
-obj.insert("data.csv") # optional : chuncks and workers
-# way 2
-obj.insert("data.csv",chunks=1000,workers=2)
+from rscylladb.cdc import cdc_insert
+cdc_insert(['192.168.10.129'],9042,'test',username='cassandra',password='cassandra',file_name='file.csv') 
 ```
+
 ### Result
-- Tested on 4GB RAM with i3 processor.
+- Tested on 4GB RAM with i3 5th Gen processor.
 
 | Rows | Duration |
 |:-----|:---------|
@@ -43,8 +34,7 @@ obj.insert("data.csv",chunks=1000,workers=2)
 |2,00,00,000|66m|
 **Note: Depends on you hardware capability!**
 
-# Authors :
-- ### 🙋‍♀️ [Reeya Patel](https://github.com/ReeyaPatel06)
+# Author :
 - ### 🙋‍♂️ [Meet Rathod](https://github.com/MeetRathod0)
 
 
